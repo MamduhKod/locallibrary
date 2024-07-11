@@ -5,6 +5,11 @@ from django.db.models import UniqueConstraint
 # Returns lower cased value of field
 from django.db.models.functions import Lower 
 import uuid 
+from django.conf import settings
+from datetime import date
+
+
+
 
 class Genre(models.Model):
     name = models.CharField(
@@ -57,6 +62,10 @@ class Book(models.Model):
     
 class BookInstance(models.Model):
     
+    class Meta:
+        # …
+        permissions = (("can_mark_returned", "Set book as returned"),)
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4,
          help_text="Unique ID for this particular book across whole library")
     book = models.ForeignKey('Book', 
@@ -79,6 +88,12 @@ class BookInstance(models.Model):
         default='m',
         help_text='Book availability',
     )
+    borrower = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    @property
+    def is_overdue(self):
+     return bool(self.due_back and date.today() > self.due_back)
+
 
     class Meta:
         ordering = ['due_back']
